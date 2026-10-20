@@ -61,7 +61,7 @@ try:
         check("%s 有營業日、營收（%s）" % (key, format(r["revenue"], ",")), r["days"] > 20 and r["revenue"] > 0, r)
         check("%s 薪資算得出來（%s）" % (key, format(r["gross"], ",")), r["people"] >= 2 and r["gross"] > 0 and r["payroll"] > 0, r)
         check("%s 示範班表沒有違反勞基法的提醒" % key, not r["flags"], r["flags"])
-        check("%s 最近兩天留著待核銷" % key, r["pending"]["rev"] >= 1, r["pending"])
+        check("%s 最近兩天的支出留著待核銷、營收都入帳" % key, r["pending"]["exp"] >= 1 and r["pending"]["rev"] == 0, r["pending"])
         check("%s 股東頁有單位成本" % key, r["products"] >= 2, r)
     # 已經有資料庫時不會蓋掉
     db = os.path.join(tmp, "exists.db"); open(db, "w").close()

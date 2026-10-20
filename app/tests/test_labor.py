@@ -77,6 +77,51 @@ class BreakTest(unittest.TestCase):
         self.assertEqual(P.break_flags("2026-03-02", [("09:00", "13:00", 240), ("14:00", "18:00", 240)]), [])
 
 
+class OvernightTest(unittest.TestCase):
+    def P(self, at, kind):
+        return {"at": at + ":00", "kind": kind}
+
+    def test_night_market_shift(self):
+        # 夜市：18:00 上班、隔天 02:00 下班 → 算在前一天、8 小時
+        by = {"2026-03-02": [self.P("2026-03-02 18:00", "in")], "2026-03-03": [self.P("2026-03-03 02:00", "out"), self.P("2026-03-03 18:00", "in")],
+              "2026-03-04": [self.P("2026-03-04 02:05", "out")]}
+        st = P.stitch_overnight(by)
+        segs = P.pair_day(st["2026-03-02"])[0]
+        self.assertEqual(segs[0][2], 480)
+        self.assertEqual(segs[0][1], "隔天 02:00")
+        self.assertEqual(P.pair_day(st["2026-03-03"])[0][0][2], 485)
+        self.assertNotIn("2026-03-04", st)
+
+    def test_out_belongs_to_previous_month(self):
+        st = P.stitch_overnight({"2026-04-01": [self.P("2026-04-01 01:30", "out")]}, before={"at": "2026-03-31 18:00:00", "kind": "in"})
+        self.assertEqual(st, {})
+
+    def test_last_day_of_month_night(self):
+        st = P.stitch_overnight({"2026-03-31": [self.P("2026-03-31 22:00", "in")]}, after=[self.P("2026-04-01 06:00", "out")])
+        self.assertEqual(P.pair_day(st["2026-03-31"])[0][0][2], 480)
+
+    def test_too_far_apart_not_stitched(self):
+        st = P.stitch_overnight({"2026-03-02": [self.P("2026-03-02 08:00", "in")], "2026-03-03": [self.P("2026-03-03 09:00", "out")]})
+        self.assertTrue(P.pair_day(st["2026-03-02"])[2])     # 25 小時：不接，列成漏打卡
+
+    def test_graveyard_shift_with_break_stays_one_day(self):
+        # 大夜班 23:00–03:00、03:30–07:00：整班算在 3/2，不會變成 3/3 也上班（不會多算一個出勤日）
+        by = {"2026-03-02": [self.P("2026-03-02 23:00", "in")],
+              "2026-03-03": [self.P("2026-03-03 03:00", "out"), self.P("2026-03-03 03:30", "in"), self.P("2026-03-03 07:00", "out"),
+                             self.P("2026-03-03 23:02", "in")],
+              "2026-03-04": [self.P("2026-03-04 03:00", "out")]}
+        st = P.stitch_overnight(by)
+        s2 = P.pair_day(st["2026-03-02"])[0]
+        self.assertEqual([x[2] for x in s2], [240, 210])
+        self.assertEqual(s2[1][0], "隔天 03:30")
+        self.assertEqual([p["at"][11:16] for p in st["2026-03-03"]], ["23:02", "03:00"])
+        self.assertEqual(P.pair_day(st["2026-03-03"])[0][0][2], 238)
+        self.assertEqual(P.break_flags("2026-03-02", s2), [])        # 中間休 30 分鐘：合法
+
+    def test_break_check_handles_next_day(self):
+        self.assertTrue(P.break_flags("2026-03-02", [("22:00", "隔天 06:00", 480)]))
+
+
 class MonthlyTest(unittest.TestCase):
     def test_full_month(self):
         # 2026-03 共 31 天、22 個平日；月休 9 天、沒有國定假日 → 應上班 22 天，全做滿＝全額月薪

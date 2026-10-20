@@ -46,9 +46,9 @@ const T = D.total;
 let h = '';
 document.getElementById('navt').textContent = D.title;
 h += `<section id="top"><p class="eyebrow">${esc(D.store)} · ${esc(D.start)} 起 · 截至 ${esc(D.asof)}</p><h1>${esc(D.title)}</h1>
-  <p class="sub">營收、支出、薪資都直接從店裡的系統讀，只算老闆核銷過的。最後更新 ${esc(D.generated)}。</p>`;
+  <p class="sub">營收、支出、薪資都直接從店裡的系統讀：營收算店長記的（老闆退回的不算），支出只算老闆核銷過的。最後更新 ${esc(D.generated)}。</p>`;
 if (D.demo) h += `<div class="banner warn">目前是示範資料（還沒建立 data/ledger.toml 或 config/store.toml）。</div>`;
-if (D.pending.rev || D.pending.exp) h += `<div class="banner warn">還有 ${D.pending.rev} 天營收、${D.pending.exp} 筆支出等老闆核銷，核銷後才會算進來。</div>`;
+if (D.pending.rev || D.pending.exp) h += `<div class="banner warn">${D.pending.rev ? `有 ${D.pending.rev} 天營收被退回、等店長改，` : ''}${D.pending.exp ? `還有 ${D.pending.exp} 筆支出等老闆核銷，` : ''}處理好才會算進來。</div>`;
 h += `<div class="grid">${tile('累計收入', fmt(T.income), `營收 ${fmt(T.revenue)}${T.other_income + T.manual_income ? '＋其他 ' + fmt(T.other_income + T.manual_income) : ''}`)}
   ${tile('累計成本', fmt(T.cost), `支出 ${fmt(T.expense + T.manual_expense)}＋薪資 ${fmt(T.payroll)}＋勞退提繳 ${fmt(T.pension)}`)}
   ${tile('累計損益', sign(T.profit), T.days ? `營業 ${T.days} 天，平均每天營收 ${fmt(T.revenue / T.days)}` : '')}

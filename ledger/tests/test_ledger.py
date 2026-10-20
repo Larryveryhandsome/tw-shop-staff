@@ -35,9 +35,9 @@ CONF = {
 def seed():
     app.init_db()
     c = sqlite3.connect(DB)
-    c.execute("INSERT INTO fin_day(day,total,cash,orders,boxes,status) VALUES('2026-03-02',10000,10000,50,80,'已核銷')")
+    c.execute("INSERT INTO fin_day(day,total,cash,orders,boxes,status) VALUES('2026-03-02',10000,10000,50,80,'已入帳')")
     c.execute("INSERT INTO fin_day(day,total,cash,orders,boxes,status) VALUES('2026-03-03',12000,12000,60,90,'已核銷')")
-    c.execute("INSERT INTO fin_day(day,total,cash,orders,boxes,status) VALUES('2026-03-04',9999,9999,1,1,'待核銷')")      # 還沒核銷：不算
+    c.execute("INSERT INTO fin_day(day,total,cash,orders,boxes,status) VALUES('2026-03-04',9999,9999,1,1,'退回')")      # 老闆退回：不算
     c.execute("INSERT INTO fin_exp(day,category,item,amount,status) VALUES('2026-03-02','自購食材雜貨','雞蛋',3000,'已核銷')")
     c.execute("INSERT INTO fin_exp(day,category,item,amount,status,photo) VALUES('2026-03-03','清潔文具雜支','垃圾袋',500,'已核銷','exp_2.jpg')")
     c.execute("INSERT INTO fin_exp(day,category,item,amount,status) VALUES('2026-03-03','薪資','預支',2000,'已核銷')")       # 薪資類：不重複算

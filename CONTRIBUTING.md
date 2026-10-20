@@ -20,7 +20,7 @@
 
 ## 送 PR 前
 
-先跑這三組測試，都要通過：
+先跑這四組測試，都要通過：
 
 ```bash
 python app/tests/test_labor.py
@@ -32,6 +32,10 @@ python app/tests/test_seed_demo.py
 
 ```bash
 python tests/test_install.py
+```
+
+```bash
+python tests/test_industries.py
 ```
 
 `app/tests/` 底下其他測試（test_crm、test_v2～v4、test_attendance、test_mk）也請跑過。

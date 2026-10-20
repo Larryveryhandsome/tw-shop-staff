@@ -94,6 +94,8 @@ pip install -r requirements.txt
 
 每個範本都帶支出類別、單位成本範例，以及合法的示範班表。詳見 [presets/README.md](presets/README.md)。
 
+**你的行業適不適合、要怎麼設定？** 看 [百工百業適用指南](docs/industries.md)。裡面有 10 種行業實際跑過一個月的結果，包括便當、自助餐、飲料、早餐、咖啡廳、夜市攤（跨午夜班）、零售、24 小時便利店（大夜班）、美髮、補習班。
+
 ---
 
 ## 計薪規則（勞基法預設值）
@@ -110,6 +112,7 @@ pip install -r requirements.txt
 | 遲到 | 遲到的分鐘本來就不算工時，**不另外罰扣** | 第 26 條 |
 | 基本工資 | 低於當年度基本工資就提醒 | 第 21 條 |
 | 一日上限 | 超過 12 小時就提醒 | 第 32 條 |
+| 跨午夜的班 | 夜市、大夜班整班算在上班那天，不會拆成兩天漏打卡 | — |
 | 勞健保 | 每人填自付額，從實發扣；雇主勞退 6% 只顯示 | 勞工退休金條例第 14 條 |
 
 所有倍率、國定假日、基本工資都在 [`config/labor_rules.toml`](config/labor_rules.toml)，**每年請自行更新**。完整說明和開店前的檢查表見 [docs/labor-law.md](docs/labor-law.md)。
@@ -166,6 +169,10 @@ python app/tests/test_labor.py
 
 ```bash
 python tests/test_install.py
+```
+
+```bash
+python tests/test_industries.py
 ```
 
 `app/tests/` 底下每支都可以單獨跑，`ledger/tests/test_ledger.py` 測股東帳務。

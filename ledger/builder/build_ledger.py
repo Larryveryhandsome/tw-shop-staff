@@ -2,7 +2,7 @@
 """股東帳務產生器：讀員工系統的資料庫（唯讀）＋ data/ledger.toml，產生股東網站 ledger/www/index.html。
 
 資料來源
-- 營收：fin_day（老闆核銷過的）
+- 營收：fin_day（店長記了就入帳；老闆退回的不算）
 - 支出：fin_exp（老闆核銷過、沒刪的；「薪資」類別是從抽屜拿的預支，已經算在薪資裡，不重複算）
 - 其他收入：petty 裡 kind＝收入 的（例如廢油回收）
 - 薪資：payroll.month_rows（和老闆頁、簽收單同一套算法）
@@ -70,8 +70,8 @@ def read_db(db_path, start, today, detail=False):
     out = dict(empty, photo_dir=os.path.join(os.path.dirname(db_path), "finance"))
     if "fin_day" in tables:
         out["revenue"] = [dict(day=r["day"], total=r["total"] or 0, orders=r["orders"] or 0, units=r["boxes"] or 0)
-                          for r in c.execute("SELECT * FROM fin_day WHERE status='已核銷' AND day>=? AND day<=? ORDER BY day", (start, today))]
-        out["pending"]["rev"] = c.execute("SELECT COUNT(*) FROM fin_day WHERE status<>'已核銷' AND day>=?", (start,)).fetchone()[0]
+                          for r in c.execute("SELECT * FROM fin_day WHERE status IN ('已核銷','已入帳') AND day>=? AND day<=? ORDER BY day", (start, today))]
+        out["pending"]["rev"] = c.execute("SELECT COUNT(*) FROM fin_day WHERE status NOT IN ('已核銷','已入帳') AND day>=?", (start,)).fetchone()[0]
     if "fin_exp" in tables:
         out["expenses"] = [dict(id=r["id"], day=r["day"], category=r["category"], item=r["item"], vendor=r["vendor"] or "",
                                 amount=r["amount"], pay=r["pay"], photo=r["photo"])

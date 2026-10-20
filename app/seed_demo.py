@@ -99,15 +99,15 @@ def seed(db_path, key, days=45, today=None, rnd=None):
                     tout = hm_add(b, rnd.choice([0, 2, 3, 5]) if j == len(segs) - 1 else 0)
                     c.execute("INSERT INTO punches(user_id,at,kind,source,created) VALUES(?,?,?,?,?)", (st["uid"], ds + " " + tin + ":00", "in", "demo", now))
                     c.execute("INSERT INTO punches(user_id,at,kind,source,created) VALUES(?,?,?,?,?)", (st["uid"], ds + " " + tout + ":00", "out", "demo", now))
-            recent = (today - d).days <= 2                       # 最近兩天留著「待核銷」，示範老闆核銷流程
+            recent = (today - d).days <= 2                       # 最近兩天的支出留著「待核銷」，示範老闆核銷流程（營收店長記了就入帳）
             total = rnd.randrange(int(demo["revenue_min"]), int(demo["revenue_max"]) + 1, 10)
             units = max(1, round(total / float(demo.get("avg_price", 100))))
             cash = int(total * rnd.uniform(0.55, 0.8)) // 10 * 10
             st_ = "待核銷" if recent else "已核銷"
             c.execute("""INSERT INTO fin_day(day,total,cash,stored,eticket,orders,boxes,voucher,topup,drawer,status,created_by,created,verified_by,verified_at)
                          VALUES(?,?,?,0,?,?,?,0,0,NULL,?,?,?,?,?)""",
-                      (ds, total, cash, total - cash, max(1, int(units * 0.7)), units, st_, admin, now, None if recent else admin, None if recent else now))
-            for e in rnd.sample(demo.get("expense", []), k=min(len(demo.get("expense", [])), rnd.choice([0, 1, 1, 2]))):
+                      (ds, total, cash, total - cash, max(1, int(units * 0.7)), units, "已入帳", admin, now, None, None))
+            for e in rnd.sample(demo.get("expense", []), k=min(len(demo.get("expense", [])), 1 if recent else rnd.choice([0, 1, 1, 2]))):
                 amt = rnd.randrange(int(e["min"]), int(e["max"]) + 1, 10)
                 c.execute("""INSERT INTO fin_exp(day,category,item,vendor,amount,pay,status,created_by,created,verified_by,verified_at)
                              VALUES(?,?,?,?,?,?,?,?,?,?,?)""",

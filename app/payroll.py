@@ -106,7 +106,12 @@ def unlock_month(c, month):
 def guess_kind(c, uid, day, now_hm):
     """這一下是上班還是下班：看今天最後一筆＋班表。上一筆是上班、而且是早班那段，現在已經過了午休中間 → 當成忘了打下班，這次算上班"""
     ps = c.execute("SELECT at, kind FROM punches WHERE user_id=? AND voided=0 AND substr(at,1,10)=? ORDER BY at", (uid, day)).fetchall()
-    if not ps or ps[-1]["kind"] == "out":
+    if not ps:
+        last = c.execute("SELECT at, kind FROM punches WHERE user_id=? AND voided=0 AND at<? ORDER BY at DESC LIMIT 1", (uid, day)).fetchone()
+        if last and last["kind"] == "in" and _gap_h(last["at"], day + " " + now_hm + ":00") <= OVERNIGHT_H:
+            return "out"           # 跨午夜的班：昨晚上班，現在（凌晨）下班
+        return "in"
+    if ps[-1]["kind"] == "out":
         return "in"
     t0 = hm(ps[-1]["at"][11:16]); n = hm(now_hm)
     sched = shift_on(shifts_of(c, uid), day)
@@ -181,21 +186,75 @@ def shift_txt(sched):
     return "／".join("%s–%s" % (a, b) for a, b in sched) or "沒有排班"
 
 
+OVERNIGHT_H = 16      # 上班卡到隔天下班卡最多隔幾小時，還算同一班（跨午夜的班：夜市、宵夜、24 小時店）
+CHAIN_BREAK_H = 2     # 夜班中間休息最多幾小時，休息後那段還算同一班
+
+
+def _gap_h(a, b):
+    from datetime import datetime as _dt
+    return (_dt.strptime(b[:19], "%Y-%m-%d %H:%M:%S") - _dt.strptime(a[:19], "%Y-%m-%d %H:%M:%S")).total_seconds() / 3600
+
+
+def stitch_overnight(byday, before=None, after=None):
+    """byday：{日期: [打卡...]}（依時間排序）。跨午夜的班：前一天最後一筆是上班、隔天第一筆是下班、相隔 OVERNIGHT_H 小時內
+    → 把那筆下班卡移到前一天（工時算在上班那天），標 overnight。
+    before：上個月最後一筆打卡（判斷本月 1 號凌晨那筆下班卡是不是上個月的）；after：下個月 1 號的打卡（本月最後一天的夜班）"""
+    days = sorted(byday)
+    out = {d: [dict(p) for p in byday[d]] for d in days}
+
+    def chain(tail, last_out_at):
+        """夜班中間休息後的下一段（休息 CHAIN_BREAK_H 小時內又上班、而且有下班卡）也是同一班：一起拿走"""
+        got = []
+        while len(tail) >= 2 and tail[0]["kind"] == "in" and tail[1]["kind"] == "out" and _gap_h(last_out_at, tail[0]["at"]) <= CHAIN_BREAK_H:
+            a, b = tail.pop(0), tail.pop(0)
+            got += [a, b]
+            last_out_at = b["at"]
+        return got
+
+    if before and dict(before)["kind"] == "in" and days:
+        first = out[days[0]]
+        if first and first[0]["kind"] == "out" and _gap_h(dict(before)["at"], first[0]["at"]) <= OVERNIGHT_H:
+            p = first.pop(0)                                  # 這筆是上個月最後一天夜班的下班卡，算在上個月
+            chain(first, p["at"])
+    nxt = [dict(p) for p in (after or [])]
+    for i, d in enumerate(days):
+        cur = out[d]
+        if not cur or cur[-1]["kind"] != "in":
+            continue
+        tail = out.get(days[i + 1]) if i + 1 < len(days) and days[i + 1] == _next_day(d) else None
+        if tail is None and i == len(days) - 1:
+            tail = nxt
+        if tail and tail[0]["kind"] == "out" and _gap_h(cur[-1]["at"], tail[0]["at"]) <= OVERNIGHT_H:
+            p = tail.pop(0)
+            moved = [p] + chain(tail, p["at"])
+            for x in moved:
+                x["overnight"] = True                          # 隔天的時間，工時算在上班那天
+            cur.extend(moved)
+    return {d: v for d, v in out.items() if v}
+
+
+def _next_day(d):
+    from datetime import date as _d, timedelta as _td
+    return (_d.fromisoformat(d) + _td(days=1)).isoformat()
+
+
 def pair_day(ps, ongoing=False):
     """ps：當天打卡（依時間排序）→ 段落 [(上, 下, 分鐘)]、所有上班時間、問題、還開著的上班時間"""
-    segs, ins, issues, open_in = [], [], [], None
+    segs, ins, issues, open_in, open_m = [], [], [], None, 0
     for p in ps:
         t = p["at"][11:16]
+        nxt = isinstance(p, dict) and p.get("overnight")        # 跨午夜接過來的打卡：時間是隔天的
+        label, minute = ("隔天 " + t if nxt else t), hm(t) + (1440 if nxt else 0)
         if p["kind"] == "in":
             if open_in:
                 issues.append("%s 上班後沒打下班卡" % open_in)
-            open_in = t
+            open_in, open_m = label, minute
             ins.append(t)
         else:
             if not open_in:
-                issues.append("%s 下班前沒打上班卡" % t)
+                issues.append("%s 下班前沒打上班卡" % label)
                 continue
-            segs.append((open_in, t, max(0, hm(t) - hm(open_in))))
+            segs.append((open_in, label, max(0, minute - open_m)))
             open_in = None
     if open_in and not ongoing:
         issues.append("%s 上班後沒打下班卡" % open_in)
@@ -370,11 +429,12 @@ def break_flags(day, segs):
     after, gap_min, tol = rb.get("after_minutes", 240), rb.get("min_break_minutes", 30), rb.get("tolerance_minutes", 15)
     out, block, last_end = [], 0, None
     for a, b, m in segs:
-        if last_end is not None and hm(a) - last_end < gap_min:
-            block += m + (hm(a) - last_end)
+        start = hm(a[-5:]) + (1440 if a.startswith("隔天") else 0)
+        if last_end is not None and start - last_end < gap_min:
+            block += m + (start - last_end)
         else:
             block = m
-        last_end = hm(b)
+        last_end = hm(b[-5:]) + (1440 if b.startswith("隔天") else 0)
         if block > after + tol:
             out.append("%s 連續工作 %d 分鐘沒有休息，超過 %d 小時應有 %d 分鐘休息（第 35 條）" % (day, block, after // 60, gap_min))
             block = -10 ** 6          # 同一段只提醒一次
@@ -409,6 +469,10 @@ def compute(c, month, today=None, only_uid=None):
         byday = {}
         for p in ps:
             byday.setdefault(p["at"][:10], []).append(p)
+        before = c.execute("SELECT at, kind FROM punches WHERE user_id=? AND voided=0 AND at<? ORDER BY at DESC LIMIT 1", (u["id"], month + "-01")).fetchone()
+        nm1 = next_month(month) + "-01"
+        after = c.execute("SELECT * FROM punches WHERE user_id=? AND voided=0 AND substr(at,1,10)=? ORDER BY at", (u["id"], nm1)).fetchall()
+        byday = stitch_overnight(byday, before, after)
         prev_by = {}
         for p in c.execute("SELECT * FROM punches WHERE user_id=? AND voided=0 AND substr(at,1,10)>=? AND substr(at,1,10)<? ORDER BY at",
                            (u["id"], prev_from, first.isoformat())).fetchall():
@@ -471,6 +535,8 @@ def board(c, day=None):
            AND COALESCE(u.removed,0)=0 ORDER BY u.id"""
     for u in c.execute(q).fetchall():
         ps = c.execute("SELECT * FROM punches WHERE user_id=? AND voided=0 AND substr(at,1,10)=? ORDER BY at", (u["id"], day)).fetchall()
+        before = c.execute("SELECT at, kind FROM punches WHERE user_id=? AND voided=0 AND at<? ORDER BY at DESC LIMIT 1", (u["id"], day)).fetchone()
+        ps = stitch_overnight({day: ps}, before).get(day, [])      # 凌晨那筆下班卡屬於昨天的夜班，今天的看板不列
         sched = shift_on(shifts_of(c, u["id"]), day)
         segs, ins, iss, open_in = pair_day(ps, ongoing=True)
         lt = lates_of(ins, sched)
