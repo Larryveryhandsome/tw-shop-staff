@@ -4,7 +4,7 @@
 - 只給看 www/index.html 和 www/img/*.jpg，全部要先輸入股東共用密碼。
 - 密碼用 pbkdf2-sha256 存在 data/ledger_auth.json（不進 git）；登入後發 HMAC 簽章 cookie（30 天），伺服器重啟不會登出。
 - 改密碼：python set_password.py（舊的登入全部失效）。
-- 同一個 IP 連錯 8 次，鎖 15 分鐘。
+- 同一個 IP 連錯 8 次，鎖 15 分鐘；所有 IP 合計 15 分鐘內錯 40 次，全站暫停登入 15 分鐘（同時送很多請求、偽造 IP 都繞不過）。
 - www/index.html 由帳務產生器自動更新，這裡不用改。
 """
 import hashlib, hmac, json, os, re, sys, threading, time
@@ -14,14 +14,37 @@ from urllib.parse import parse_qs, urlsplit
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "app"))
 import cfg as SHOP
-WWW = os.path.join(HERE, "www")
-CFG = os.path.join(os.path.dirname(HERE), "data", "ledger_auth.json")
+WWW = os.environ.get("LEDGER_WWW") or os.path.join(HERE, "www")
+CFG = os.environ.get("LEDGER_AUTH") or os.path.join(os.path.dirname(HERE), "data", "ledger_auth.json")   # LEDGER_AUTH：測試用
 PORT = int(os.environ.get("LEDGER_PORT") or SHOP.STORE_ALL.get("ledger", {}).get("port", 8403))
 COOKIE = "ledger"
 DAYS = 30
 MAX_FAIL, LOCK_SEC = 8, 900
+GLOBAL_MAX = 40          # 15 分鐘內「所有 IP 合計」錯 40 次 → 全站暫停登入 15 分鐘（擋偽造 CF-Connecting-IP 換 IP 猜密碼）
 _fails = {}
+_gfails = []
 _lock = threading.Lock()
+
+
+def reserve(ip, now):
+    """驗密碼之前先佔一次失敗名額（對了再退回）：同時送幾十個請求也繞不過「連錯 8 次鎖 15 分鐘」。回傳 False＝鎖住"""
+    with _lock:
+        n, t0 = _fails.get(ip, (0, now))
+        if now - t0 > LOCK_SEC:
+            n, t0 = 0, now
+        _gfails[:] = [t for t in _gfails if now - t < LOCK_SEC]
+        if n >= MAX_FAIL or len(_gfails) >= GLOBAL_MAX:
+            return False
+        _fails[ip] = (n + 1, t0)
+        _gfails.append(now)
+        return True
+
+
+def release(ip, now):
+    with _lock:
+        _fails.pop(ip, None)
+        if now in _gfails:
+            _gfails.remove(now)
 
 
 def cfg():
@@ -137,21 +160,13 @@ class H(BaseHTTPRequestHandler):
         if urlsplit(self.path).path != "/login":
             return self.send(404, "找不到", "text/plain; charset=utf-8")
         ip, now = self.ip(), time.time()
-        with _lock:
-            n, t0 = _fails.get(ip, (0, now))
-            if now - t0 > LOCK_SEC:
-                n, t0 = 0, now
-            locked = n >= MAX_FAIL
-        if locked:
+        size = max(0, min(int(self.headers.get("Content-Length") or 0), 4096))
+        pw = (parse_qs(self.rfile.read(size).decode("utf-8", "replace")).get("pw") or [""])[0]   # 先把內容讀完再回，連線才不會被重設
+        if not reserve(ip, now):
             return self.send(429, LOGIN % "錯太多次，請 15 分鐘後再試")
-        size = min(int(self.headers.get("Content-Length") or 0), 4096)
-        pw = (parse_qs(self.rfile.read(size).decode("utf-8", "replace")).get("pw") or [""])[0]
         if pw and check_pw(pw):
-            with _lock:
-                _fails.pop(ip, None)
+            release(ip, now)
             return self.send(303, "", cookie=new_token(), location="/")
-        with _lock:
-            _fails[ip] = (n + 1, t0)
         time.sleep(1)
         return self.send(401, LOGIN % "密碼不對")
 

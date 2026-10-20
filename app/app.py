@@ -34,6 +34,12 @@ DAILY_TARGET_DEFAULT = int(cfg.SALES.get("daily_call_target", 50))
 def now(): return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def csv_cell(v):
+    """CSV 公式注入：名單是外面匯入、夥伴也能改的，=、+、-、@ 開頭的字串用 Excel 打開會被當公式執行（可外連洩漏資料）→ 前面加 ' 當文字"""
+    if isinstance(v, str) and v[:1] in ("=", "+", "-", "@", "\t", "\r"): return "'" + v
+    return v
+
+
 def _h(s): return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
@@ -94,6 +100,34 @@ CREATE TABLE IF NOT EXISTS manual_ack(manual_id INTEGER NOT NULL, user_id INTEGE
 """
 _lock = threading.Lock()
 _fails = {}   # username -> [失敗次數, 鎖到何時(epoch)]；連錯 8 次鎖 15 分鐘
+_fails_lock = threading.Lock()
+MAX_FAIL, LOCK_SEC = 8, 900
+
+
+def _login_reserve(un):
+    """登入前先佔一次「失敗」名額（密碼對了再清掉）。同時送幾十個猜密碼請求也只會有 8 個真的被驗證，其他直接鎖。
+    回傳 False＝這個帳號現在鎖住"""
+    with _fails_lock:
+        f = _fails.setdefault(un, [0, 0])
+        t = time.time()
+        if f[1] > t: return False
+        if f[1]: f[:] = [0, 0]                     # 鎖過期了，重新算
+        if f[0] >= MAX_FAIL:
+            f[:] = [0, t + LOCK_SEC]; return False
+        f[0] += 1
+        return True
+
+
+def _login_failed(un):
+    with _fails_lock:
+        f = _fails.get(un)
+        if f and f[0] >= MAX_FAIL: f[:] = [0, time.time() + LOCK_SEC]
+
+
+def _login_ok(un):
+    with _fails_lock:
+        _fails.pop(un, None)
+
 
 def db():
     c = sqlite3.connect(DB, timeout=15)
@@ -307,7 +341,7 @@ class H(O.Ops, X.Extras, SA.Safety, MK.Marketing, http.server.BaseHTTPRequestHan
                                  "SELECT cl.*, u.name caller, l.name lead FROM calls cl JOIN users u ON u.id=cl.user_id JOIN leads l ON l.id=cl.lead_id ORDER BY cl.at").fetchall()
                 buf = io.StringIO(); w = csv.writer(buf)
                 if rows: w.writerow(rows[0].keys())
-                for r in rows: w.writerow(list(r))
+                for r in rows: w.writerow([csv_cell(v) for v in r])
                 b = ("﻿" + buf.getvalue()).encode("utf-8")
                 self.send_response(200); self.send_header("Content-Type", "text/csv; charset=utf-8")
                 self.send_header("Content-Disposition", f"attachment; filename=crm_{kind}_{today()}.csv")
@@ -406,19 +440,16 @@ class H(O.Ops, X.Extras, SA.Safety, MK.Marketing, http.server.BaseHTTPRequestHan
     # --- actions
     def login(self, c, d):
         un = (d.get("username") or "").strip().lower()
-        f = _fails.get(un, [0, 0])
-        if f[1] > time.time(): return self.err("這個帳號錯太多次，請 15 分鐘後再試，或請店長重設密碼。", 429)
+        if not _login_reserve(un): return self.err("這個帳號錯太多次，請 15 分鐘後再試，或請店長重設密碼。", 429)
         r = c.execute("SELECT * FROM users WHERE lower(username)=? AND active=1 AND COALESCE(demo,0)=0", (un,)).fetchone()
         time.sleep(0.3)
         if not r:
             pend = c.execute("SELECT * FROM users WHERE lower(username)=? AND pending=1", (un,)).fetchone()
-            if pend and check_pw(d.get("password", ""), pend["pw"]): return self.err("你的帳號還在等老闆審核，核准後就能登入。", 403)
+            if pend and check_pw(d.get("password", ""), pend["pw"]): _login_ok(un); return self.err("你的帳號還在等老闆審核，核准後就能登入。", 403)
         if not r or not check_pw(d.get("password", ""), r["pw"]):
-            f[0] += 1
-            if f[0] >= 8: f = [0, time.time() + 900]
-            _fails[un] = f
+            _login_failed(un)
             return self.err("帳號或密碼不對", 401)
-        _fails.pop(un, None)
+        _login_ok(un)
         tok = secrets.token_urlsafe(32)
         c.execute("DELETE FROM sessions WHERE expires<?", (now(),))
         c.execute("INSERT INTO sessions(token,user_id,expires) VALUES(?,?,?)", (tok, r["id"], (datetime.now() + timedelta(days=SESSION_DAYS)).strftime("%Y-%m-%d %H:%M:%S")))

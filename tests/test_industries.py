@@ -294,9 +294,9 @@ def run_scenario(sc, port, tmp):
         with open(os.path.join(out, "index.html"), encoding="utf-8") as f:
             data = json.loads(f.read().split("const D = ")[1].split(";\nconst fmt")[0])
         pm = data["payroll"].get(MONTH, {})
-        ok = pm.get("gross") == sum(r["base"] for r in rows.values()) and data["total"]["revenue"] >= 18000
-    check("股東頁：9 月薪資總額和老闆頁一致、今天營收有進來", ok,
-          r.stderr[-400:] if r.returncode else (pm.get("gross"), sum(x["base"] for x in rows.values()), data["total"]["revenue"], data["pending"]))
+        ok = pm.get("gross") == sum(r["base"] + r["adj"] for r in rows.values()) and data["total"]["revenue"] >= 18000
+    check("股東頁：9 月薪資總額（應發＋抽成等調整）和老闆頁一致、今天營收有進來", ok,
+          r.stderr[-400:] if r.returncode else (pm.get("gross"), sum(x["base"] + x["adj"] for x in rows.values()), data["total"]["revenue"], data["pending"]))
 
 
 if __name__ == "__main__":

@@ -313,6 +313,17 @@ def holidays(year):
     return set(h.get("dates_%d" % int(year), [])) if h.get("enabled", True) else set()
 
 
+def year_missing(year):
+    """labor_rules.toml 沒有這一年的國定假日、基本工資 → 回傳提醒（國定假日清單是逐年手填的，跨年忘了補會靜靜算錯）"""
+    y, out = int(year), []
+    h = L.get("holiday", {})
+    if h.get("enabled", True) and ("dates_%d" % y) not in h:
+        out.append("labor_rules.toml 沒有 %d 年的國定假日（[holiday] dates_%d），國定假日出勤加倍與應上班天數會算錯，請依人事行政總處公告補上" % (y, y))
+    if str(y) not in {str(k) for k in L.get("minimum_wage", {})}:
+        out.append("labor_rules.toml 沒有 %d 年的基本工資（[minimum_wage] %d），基本工資檢查用的是舊年度的數字，請依勞動部公告補上" % (y, y))
+    return out
+
+
 def min_wage(year):
     mw = L.get("minimum_wage", {})
     keys = sorted(int(k) for k in mw if str(k).isdigit())
@@ -413,6 +424,7 @@ def legal_pay(kind, amount, off_days, month, day_mins, prev_days=()):
     gross = base_reg + extra_reg + ot_pay + rest_pay + hol_pay
     if kind == "monthly" and (off_days or 0) < ml * 2 // 7:
         flags.append("表定月休 %d 天，少於每週兩天（一例一休）約 %d 天" % (off_days or 0, ml * 2 // 7))
+    flags += year_missing(y)
     mw = min_wage(y)
     if kind == "monthly" and mw.get("monthly") and amount < mw["monthly"]:
         flags.append("月薪 %s 低於 %d 年基本工資 %s（部分工時請改用時薪制）" % (format(amount, ","), y, format(mw["monthly"], ",")))

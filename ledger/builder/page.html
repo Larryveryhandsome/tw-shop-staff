@@ -73,7 +73,7 @@ h += `<section id="exp"><h2>支出</h2><div class="card"><h3>依類別</h3>${D.c
 
 // 薪資
 const pm = Object.entries(D.payroll);
-h += `<section id="pay"><h2>薪資</h2><div class="card"><div class="tbl"><table><thead><tr><th>月份</th><th class="r">人數</th><th class="r">應發</th><th class="r">勞健保自付</th><th class="r">實發</th><th class="r">雇主勞退提繳</th><th>狀態</th></tr></thead><tbody>
+h += `<section id="pay"><h2>薪資</h2><div class="card"><div class="tbl"><table><thead><tr><th>月份</th><th class="r">人數</th><th class="r">應發（含獎金／調整）</th><th class="r">勞健保自付</th><th class="r">實發</th><th class="r">雇主勞退提繳</th><th>狀態</th></tr></thead><tbody>
   ${pm.map(([m, p]) => `<tr><td>${mlabel(m)}</td><td class="r">${p.people}</td><td class="r">${fmt(p.gross)}</td><td class="r">${fmt(p.ins)}</td><td class="r">${fmt(p.net)}</td><td class="r">${fmt(p.pension)}</td><td>${p.locked ? '已定案' : '試算中'}</td></tr>
     ${D.show_payroll_detail ? p.rows.map(r => `<tr><td class="sub">　${esc(r.name)}</td><td></td><td class="r sub">${fmt(r.gross)}</td><td></td><td class="r sub">${fmt(r.net)}</td><td></td><td></td></tr>`).join('') : ''}`).join('') || '<tr><td colspan="7" class="sub">還沒有薪資資料</td></tr>'}
   </tbody></table></div></div>${D.show_payroll_detail ? '' : '<p class="sub" style="font-size:13px">個人薪資不公開，只列每月總額。</p>'}</section>`;

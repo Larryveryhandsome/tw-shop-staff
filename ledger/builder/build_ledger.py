@@ -5,7 +5,7 @@
 - 營收：fin_day（店長記了就入帳；老闆退回的不算）
 - 支出：fin_exp（老闆核銷過、沒刪的；「薪資」類別是從抽屜拿的預支，已經算在薪資裡，不重複算）
 - 其他收入：petty 裡 kind＝收入 的（例如廢油回收）
-- 薪資：payroll.month_rows（和老闆頁、簽收單同一套算法）
+- 薪資：payroll.month_rows（和老闆頁、簽收單同一套算法）；薪資成本＝應發＋老闆調整（獎金、抽成）
 - 股東、期初、系統外手記、對帳點、單位成本：data/ledger.toml（沒有就用 config/ledger.example.toml 示範）
 
 用法
@@ -83,14 +83,16 @@ def read_db(db_path, start, today, detail=False):
                                for r in c.execute("SELECT * FROM petty WHERE removed=0 AND kind='收入' AND day>=? AND day<=? ORDER BY day", (start, today))]
     if "pay_profile" in tables:
         for m in months_between(start, today):
-            rows = [r for r in P.month_rows(c, m, today=today) if r["base"] or r["net"] or r["mins"]]   # 這個月沒出勤、沒錢的人不列
+            rows = [r for r in P.month_rows(c, m, today=today) if r["base"] or r["net"] or r["mins"] or r.get("adj")]   # 這個月沒出勤、沒錢的人不列
             if not rows:
                 continue
             locked = P.is_locked(c, m)
+            # 薪資成本＝應發＋老闆調整（獎金、抽成是加、賠償扣款是減）：調整算在實發裡，股東頁不能漏掉
             out["payroll"][m] = dict(
-                gross=sum(r["base"] for r in rows), net=sum(r["net"] for r in rows), ins=sum(r.get("ins_ded", 0) for r in rows),
+                gross=sum(r["base"] + r.get("adj", 0) for r in rows), base=sum(r["base"] for r in rows), adj=sum(r.get("adj", 0) for r in rows),
+                net=sum(r["net"] for r in rows), ins=sum(r.get("ins_ded", 0) for r in rows),
                 pension=sum(r.get("pension_employer", 0) for r in rows), people=len(rows), locked=locked,
-                rows=[dict(name=r["name"], kind=r["kind"], gross=r["base"], net=r["net"]) for r in rows] if detail else [])
+                rows=[dict(name=r["name"], kind=r["kind"], gross=r["base"] + r.get("adj", 0), net=r["net"]) for r in rows] if detail else [])
     c.close()
     return out
 
