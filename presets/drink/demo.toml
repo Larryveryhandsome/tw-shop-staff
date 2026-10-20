@@ -1,0 +1,57 @@
+# 示範假資料設定：飲料店（python app/seed_demo.py --preset drink）
+# 人名一律用職稱代稱，電話一律 0900-000-xxx；不含任何真實店家資料。
+
+revenue_min = 18000
+revenue_max = 35000
+avg_price = 55
+weekly_closed = ""   # 每週公休：0＝週一 … 6＝週日，逗號分開；空白＝全年無休
+leads = ["示範科技公司", "示範銀行分行", "示範高中", "示範診所"]
+
+[[staff]]
+name = "店長"
+role = "manager"
+kind = "monthly"
+amount = 35000
+shift = ["10:00", "14:00", "15:00", "19:00"]
+
+[[staff]]
+name = "早班A"
+role = "staff"
+kind = "hourly"
+amount = 200
+shift = ["10:00", "14:00", "", ""]
+
+[[staff]]
+name = "晚班B"
+role = "staff"
+kind = "hourly"
+amount = 200
+shift = ["16:00", "20:00", "20:30", "22:00"]
+
+[[expense]]
+category = "原物料（茶葉、奶、糖）"
+item = "鮮奶"
+min = 1200
+max = 3000
+
+[[expense]]
+category = "配料（珍珠、椰果）"
+item = "珍珠"
+min = 500
+max = 1500
+
+[[expense]]
+category = "杯材與包材"
+item = "杯子、封膜"
+min = 800
+max = 2000
+
+[[manual]]
+chapter = "吧台"
+title = "茶湯保存"
+body = "茶湯煮好後標示時間，超過 4 小時倒掉。"
+
+[[manual]]
+chapter = "出杯"
+title = "甜度冰塊確認"
+body = "出杯前複誦甜度、冰塊，封膜後再搖杯。"

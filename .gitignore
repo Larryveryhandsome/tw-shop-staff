@@ -1,0 +1,15 @@
+# 執行時資料、秘密：一律不進 git
+data/
+backups/
+config/store.toml
+*.db
+*.db-wal
+*.db-shm
+*.pem
+*.bak*
+*.bk*
+__pycache__/
+ledger/www/
+*_列印後*
+*密碼*.txt
+.env

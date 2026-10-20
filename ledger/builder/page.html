@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow">
+<title>{{TITLE}}</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--sub:#6e6e73;--line:#d2d2d7;--band:#f5f5f7;--accent:#0071e3;--good:#1a7f37;--bad:#c4360a;--warn:#9a6700;--bar:#0071e3}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#000;--card:#1c1c1e;--ink:#f5f5f7;--sub:#a1a1a6;--line:#38383a;--band:#2c2c2e;--accent:#2997ff;--good:#3fb950;--bad:#ff7b5c;--warn:#d29922;--bar:#2997ff}}
+:root[data-theme="dark"]{--bg:#000;--card:#1c1c1e;--ink:#f5f5f7;--sub:#a1a1a6;--line:#38383a;--band:#2c2c2e;--accent:#2997ff;--good:#3fb950;--bad:#ff7b5c;--warn:#d29922;--bar:#2997ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif}
+nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav .in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;overflow-x:auto;white-space:nowrap}
+nav b{margin-right:8px}nav a{color:var(--sub);text-decoration:none;font-size:14px}nav a:hover{color:var(--ink)}nav .out{margin-left:auto}
+main{max-width:1080px;margin:0 auto;padding:24px 16px 60px}
+.eyebrow{color:var(--accent);font-weight:600;font-size:14px;margin:0}
+h1{font-size:34px;margin:4px 0 6px;letter-spacing:.3px}h2{font-size:24px;margin:44px 0 12px}h3{font-size:16px;margin:0 0 8px}
+.sub{color:var(--sub)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
+.tile{background:var(--card);border-radius:16px;padding:16px 18px}.tile .k{color:var(--sub);font-size:13px}.tile .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.tile .s{color:var(--sub);font-size:12.5px}
+.card{background:var(--card);border-radius:16px;padding:16px 18px;margin:12px 0}
+.tbl{overflow-x:auto}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:12.5px;color:var(--sub);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}
+.r{text-align:right;white-space:nowrap}.pos{color:var(--good)}.neg{color:var(--bad)}
+tfoot td{font-weight:700;background:var(--band)}
+.banner{border-radius:12px;padding:10px 14px;margin:10px 0;background:var(--band);font-size:14px}.banner.warn{border-left:4px solid var(--warn)}
+.bar{height:10px;border-radius:5px;background:var(--bar);min-width:2px}
+.barrow{display:grid;grid-template-columns:minmax(90px,160px) 1fr 90px;gap:10px;align-items:center;padding:6px 0}
+details.fold{background:var(--card);border-radius:16px;margin:12px 0}details.fold summary{padding:14px 18px;cursor:pointer;font-weight:600}
+details.fold .in{padding:0 18px 16px}details.fold summary small{color:var(--sub);font-weight:400;margin-left:8px}
+a.rc{color:var(--accent)}
+.foot{margin-top:48px;color:var(--sub);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
+@media (max-width:600px){h1{font-size:28px}.tile .v{font-size:22px}td,th{padding:7px 6px}}
+</style></head><body>
+<nav><div class="in"><b id="navt"></b><a href="#top">總覽</a><a href="#pl">每月損益</a><a href="#exp">支出</a><a href="#pay">薪資</a><a href="#cap">股東</a><a href="#unit">單位成本</a><a class="out" href="/logout">登出</a></div></nav>
+<main id="main"></main>
+<script>
+const D = /*DATA*/null;
+const fmt = n => (n < 0 ? '−' : '') + Math.abs(Math.round(n || 0)).toLocaleString('zh-TW');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sign = n => `<span class="${n < 0 ? 'neg' : n > 0 ? 'pos' : ''}">${fmt(n)}</span>`;
+const mlabel = m => `${m.slice(0, 4)} 年 ${+m.slice(5)} 月`;
+const tile = (k, v, s) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
+const T = D.total;
+let h = '';
+document.getElementById('navt').textContent = D.title;
+h += `<section id="top"><p class="eyebrow">${esc(D.store)} · ${esc(D.start)} 起 · 截至 ${esc(D.asof)}</p><h1>${esc(D.title)}</h1>
+  <p class="sub">營收、支出、薪資都直接從店裡的系統讀，只算老闆核銷過的。最後更新 ${esc(D.generated)}。</p>`;
+if (D.demo) h += `<div class="banner warn">目前是示範資料（還沒建立 data/ledger.toml 或 config/store.toml）。</div>`;
+if (D.pending.rev || D.pending.exp) h += `<div class="banner warn">還有 ${D.pending.rev} 天營收、${D.pending.exp} 筆支出等老闆核銷，核銷後才會算進來。</div>`;
+h += `<div class="grid">${tile('累計收入', fmt(T.income), `營收 ${fmt(T.revenue)}${T.other_income + T.manual_income ? '＋其他 ' + fmt(T.other_income + T.manual_income) : ''}`)}
+  ${tile('累計成本', fmt(T.cost), `支出 ${fmt(T.expense + T.manual_expense)}＋薪資 ${fmt(T.payroll)}＋勞退提繳 ${fmt(T.pension)}`)}
+  ${tile('累計損益', sign(T.profit), T.days ? `營業 ${T.days} 天，平均每天營收 ${fmt(T.revenue / T.days)}` : '')}
+  ${tile('估計可動用資金', fmt(D.funds), '期初＋出資＋收入−成本−押金＋借入；原則上以實際對帳為準')}</div></section>`;
+
+// 每月損益
+h += `<section id="pl"><h2>每月損益</h2><div class="card"><div class="tbl"><table><thead><tr><th>月份</th><th class="r">營收</th><th class="r">其他收入</th><th class="r">支出</th><th class="r">薪資</th><th class="r">勞退提繳</th><th class="r">損益</th><th class="r">${esc(D.unit)}數</th></tr></thead><tbody>
+  ${D.months.map(m => `<tr><td>${mlabel(m.month)}</td><td class="r">${fmt(m.revenue)}</td><td class="r">${fmt(m.other_income + m.manual_income)}</td><td class="r">${fmt(m.expense + m.manual_expense)}</td>
+    <td class="r">${fmt(m.payroll)}${D.payroll[m.month] && !D.payroll[m.month].locked ? '<div class="sub" style="font-size:12px">試算中</div>' : ''}</td><td class="r">${fmt(m.pension)}</td><td class="r"><b>${sign(m.profit)}</b></td><td class="r">${fmt(m.units)}</td></tr>`).join('')}
+  </tbody><tfoot><tr><td>合計</td><td class="r">${fmt(T.revenue)}</td><td class="r">${fmt(T.other_income + T.manual_income)}</td><td class="r">${fmt(T.expense + T.manual_expense)}</td><td class="r">${fmt(T.payroll)}</td><td class="r">${fmt(T.pension)}</td><td class="r">${sign(T.profit)}</td><td class="r">${fmt(T.units)}</td></tr></tfoot></table></div></div>
+  <p class="sub" style="font-size:13px">薪資是應發金額（含加班、假日加給；勞健保自付額已含在內）。雇主的勞保、健保負擔若要列入，請在 data/ledger.toml 用「支出」手記。</p></section>`;
+
+// 支出
+const maxc = Math.max(1, ...D.categories.map(c => c[1]));
+h += `<section id="exp"><h2>支出</h2><div class="card"><h3>依類別</h3>${D.categories.map(([k, v]) => `<div class="barrow"><div>${esc(k)}</div><div class="bar" style="width:${(v / maxc * 100).toFixed(1)}%"></div><div class="r">${fmt(v)}</div></div>`).join('') || '<div class="sub">還沒有支出</div>'}</div>
+  <details class="fold"><summary>每一筆支出<small>${D.expenses.length} 筆</small></summary><div class="in"><div class="tbl"><table><thead><tr><th>日期</th><th>類別</th><th>項目</th><th>廠商</th><th>付款</th><th class="r">金額</th><th>單據</th></tr></thead><tbody>
+  ${D.expenses.slice().reverse().map(e => `<tr><td>${esc(e.day)}</td><td>${esc(e.category)}</td><td>${esc(e.item)}${e.note ? `<div class="sub" style="font-size:12px">${esc(e.note)}</div>` : ''}</td><td>${esc(e.vendor)}</td><td>${esc(e.pay)}</td><td class="r">${fmt(e.amount)}</td><td>${e.photo ? `<a class="rc" href="/img/${esc(e.photo)}.jpg" target="_blank">看單據</a>` : ''}</td></tr>`).join('')}
+  </tbody></table></div></div></details>
+  <details class="fold"><summary>每天營收<small>${D.revenue_days.length} 天</small></summary><div class="in"><div class="tbl"><table><thead><tr><th>日期</th><th class="r">營收</th><th class="r">單數</th><th class="r">${esc(D.unit)}數</th></tr></thead><tbody>
+  ${D.revenue_days.slice().reverse().map(r => `<tr><td>${esc(r.day)}</td><td class="r">${fmt(r.total)}</td><td class="r">${fmt(r.orders)}</td><td class="r">${fmt(r.units)}</td></tr>`).join('')}
+  </tbody></table></div></div></details></section>`;
+
+// 薪資
+const pm = Object.entries(D.payroll);
+h += `<section id="pay"><h2>薪資</h2><div class="card"><div class="tbl"><table><thead><tr><th>月份</th><th class="r">人數</th><th class="r">應發</th><th class="r">勞健保自付</th><th class="r">實發</th><th class="r">雇主勞退提繳</th><th>狀態</th></tr></thead><tbody>
+  ${pm.map(([m, p]) => `<tr><td>${mlabel(m)}</td><td class="r">${p.people}</td><td class="r">${fmt(p.gross)}</td><td class="r">${fmt(p.ins)}</td><td class="r">${fmt(p.net)}</td><td class="r">${fmt(p.pension)}</td><td>${p.locked ? '已定案' : '試算中'}</td></tr>
+    ${D.show_payroll_detail ? p.rows.map(r => `<tr><td class="sub">　${esc(r.name)}</td><td></td><td class="r sub">${fmt(r.gross)}</td><td></td><td class="r sub">${fmt(r.net)}</td><td></td><td></td></tr>`).join('') : ''}`).join('') || '<tr><td colspan="7" class="sub">還沒有薪資資料</td></tr>'}
+  </tbody></table></div></div>${D.show_payroll_detail ? '' : '<p class="sub" style="font-size:13px">個人薪資不公開，只列每月總額。</p>'}</section>`;
+
+// 股東
+h += `<section id="cap"><h2>股東出資與盈餘試算</h2><div class="card"><div class="tbl"><table><thead><tr><th>股東</th><th class="r">認股</th><th class="r">已出資</th><th class="r">還沒到位</th><th class="r">持分（依已出資）</th><th class="r">累計損益分攤（試算）</th></tr></thead><tbody>
+  ${D.shareholders.map(s => `<tr><td>${esc(s.name)}</td><td class="r">${fmt(s.committed)}</td><td class="r">${fmt(s.paid)}</td><td class="r">${s.owed ? fmt(s.owed) : '—'}</td><td class="r">${(s.ratio * 100).toFixed(1)}%</td><td class="r">${sign(s.profit_share)}</td></tr>`).join('') || '<tr><td colspan="6" class="sub">還沒設定股東</td></tr>'}
+  </tbody><tfoot><tr><td>合計</td><td class="r">${fmt(D.shareholders.reduce((a, s) => a + s.committed, 0))}</td><td class="r">${fmt(D.paid_total)}</td><td class="r">${fmt(D.shareholders.reduce((a, s) => a + s.owed, 0))}</td><td class="r">100%</td><td class="r">${sign(T.profit)}</td></tr></tfoot></table></div></div>
+  <p class="sub" style="font-size:13px">損益分攤只是依已出資比例的試算，原則上實際分配以股東協議、公司章程與會計師結算為準。</p>
+  <div class="card"><h3>資金怎麼算</h3><div class="tbl"><table><tbody>
+    <tr><td>期初（戶頭＋抽屜）</td><td class="r">${fmt(D.opening)}</td></tr><tr><td>＋股東已出資</td><td class="r">${fmt(D.paid_total)}</td></tr>
+    <tr><td>＋累計收入</td><td class="r">${fmt(T.income)}</td></tr><tr><td>−累計成本</td><td class="r">${fmt(-T.cost)}</td></tr>
+    <tr><td>−押金、保證金（會退回，算資產）</td><td class="r">${fmt(-D.deposits)}</td></tr><tr><td>＋借入（還款為負）</td><td class="r">${fmt(D.borrowed)}</td></tr>
+  </tbody><tfoot><tr><td>估計可動用資金</td><td class="r">${fmt(D.funds)}</td></tr></tfoot></table></div></div>
+  ${D.checks.length ? `<div class="card"><h3>對帳</h3><div class="tbl"><table><thead><tr><th>日期</th><th class="r">戶頭</th><th class="r">抽屜</th><th class="r">實際合計</th><th class="r">系統估計（算到當月底）</th><th class="r">差額</th></tr></thead><tbody>
+    ${D.checks.map(c => `<tr><td>${esc(c.date)}</td><td class="r">${fmt(c.bank)}</td><td class="r">${fmt(c.cash)}</td><td class="r">${fmt(c.actual)}</td><td class="r">${fmt(c.estimate)}</td><td class="r">${sign(c.diff)}</td></tr>`).join('')}
+    </tbody></table></div><p class="sub" style="font-size:13px">差額可能來自還沒核銷的單據、還沒入帳的電子支付、月中對帳等，請逐筆確認。</p></div>` : ''}
+  ${D.entries.length ? `<details class="fold"><summary>系統外手記<small>${D.entries.length} 筆</small></summary><div class="in"><div class="tbl"><table><thead><tr><th>日期</th><th>種類</th><th>項目</th><th class="r">金額</th><th>備註</th></tr></thead><tbody>
+    ${D.entries.map(e => `<tr><td>${esc(e.date)}</td><td>${esc(e.kind)}</td><td>${esc(e.item)}</td><td class="r">${fmt(e.amount)}</td><td>${esc(e.note)}</td></tr>`).join('')}</tbody></table></div></div></details>` : ''}</section>`;
+
+// 單位成本
+h += `<section id="unit"><h2>單位成本</h2>${D.products.length ? `<div class="card"><div class="tbl"><table><thead><tr><th>品項</th><th class="r">售價</th><th class="r">成本</th><th class="r">毛利</th><th class="r">毛利率</th><th>通路抽成後毛利</th></tr></thead><tbody>
+  ${D.products.map(p => `<tr><td><b>${esc(p.name)}</b><div class="sub" style="font-size:12px">${p.parts.map(x => esc(x.name) + ' ' + x.cost).join('＋')}</div></td><td class="r">${fmt(p.price)}</td><td class="r">${p.cost}</td><td class="r">${sign(p.margin)}</td><td class="r">${p.margin_pct}%</td>
+    <td>${p.channels.map(c => `${esc(c.name)}（抽 ${(c.rate * 100).toFixed(0)}%）：${sign(c.margin)}`).join('<br>') || '—'}</td></tr>`).join('')}
+  </tbody></table></div></div><p class="sub" style="font-size:13px">成本只算直接材料與包材，不含人事、房租等固定開銷。</p>` : '<div class="card sub">還沒設定單位成本（data/ledger.toml 的 [[products]]）。</div>'}</section>`;
+
+h += `<div class="foot">本頁為內部管理用試算，原則上不能取代會計師簽證之財務報表與稅務申報資料。數字如有疑義，請以原始單據與帳戶紀錄為準。</div>`;
+document.getElementById('main').innerHTML = h;
+</script>
+</body></html>

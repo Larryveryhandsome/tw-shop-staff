@@ -1,0 +1,56 @@
+# 股東帳務範本：飲料店
+# 用法：python tools/use_preset.py drink（會複製到 data/ledger.toml），再把股東、期初、手記改成你自己的。
+# ⚠️ 內部管理用試算，原則上不能取代會計師簽證的財務報表與報稅資料。
+
+[ledger]
+title = "股東帳務"
+period_start = "2026-01-01"
+show_payroll_detail = false
+show_receipts = true
+
+[[shareholders]]
+name = "股東甲"
+committed = 600000
+paid = 600000
+
+[[shareholders]]
+name = "股東乙"
+committed = 400000
+paid = 400000
+
+[opening]
+date = "2026-01-01"
+bank = 0
+cash = 0
+
+[[entries]]
+date = "2026-01-02"
+kind = "支出"
+category = "開辦費"
+item = "裝潢與設備（示範）"
+amount = 300000
+
+[[entries]]
+date = "2026-01-02"
+kind = "押金"
+category = "押金"
+item = "房屋押金（示範）"
+amount = 60000
+
+[[products]]
+name = "珍珠奶茶（大）"
+price = 60
+parts = [ { name = "茶湯", cost = 4 }, { name = "奶", cost = 7 }, { name = "珍珠", cost = 3 }, { name = "糖", cost = 1 }, { name = "杯、封膜、吸管", cost = 5 } ]
+fees = { "外送平台" = 0.3 }
+
+[[products]]
+name = "鮮奶茶（大）"
+price = 70
+parts = [ { name = "茶湯", cost = 4 }, { name = "鮮奶", cost = 14 }, { name = "糖", cost = 1 }, { name = "杯、封膜、吸管", cost = 5 } ]
+fees = { "外送平台" = 0.3 }
+
+[[products]]
+name = "四季春（大）"
+price = 35
+parts = [ { name = "茶湯", cost = 3 }, { name = "糖", cost = 1 }, { name = "杯、封膜、吸管", cost = 5 } ]
+fees = { "外送平台" = 0.3 }

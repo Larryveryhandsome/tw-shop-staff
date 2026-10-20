@@ -1,0 +1,55 @@
+# 股東帳務範本：早餐店
+# 用法：python tools/use_preset.py breakfast（會複製到 data/ledger.toml），再把股東、期初、手記改成你自己的。
+# ⚠️ 內部管理用試算，原則上不能取代會計師簽證的財務報表與報稅資料。
+
+[ledger]
+title = "股東帳務"
+period_start = "2026-01-01"
+show_payroll_detail = false
+show_receipts = true
+
+[[shareholders]]
+name = "股東甲"
+committed = 600000
+paid = 600000
+
+[[shareholders]]
+name = "股東乙"
+committed = 400000
+paid = 400000
+
+[opening]
+date = "2026-01-01"
+bank = 0
+cash = 0
+
+[[entries]]
+date = "2026-01-02"
+kind = "支出"
+category = "開辦費"
+item = "裝潢與設備（示範）"
+amount = 300000
+
+[[entries]]
+date = "2026-01-02"
+kind = "押金"
+category = "押金"
+item = "房屋押金（示範）"
+amount = 60000
+
+[[products]]
+name = "火腿蛋吐司"
+price = 45
+parts = [ { name = "吐司", cost = 5 }, { name = "火腿", cost = 6 }, { name = "蛋", cost = 4 }, { name = "醬料與生菜", cost = 2 }, { name = "包材", cost = 2 } ]
+fees = { "外送平台" = 0.3 }
+
+[[products]]
+name = "蘿蔔糕加蛋"
+price = 50
+parts = [ { name = "蘿蔔糕", cost = 12 }, { name = "蛋", cost = 4 }, { name = "包材", cost = 2 } ]
+fees = { "外送平台" = 0.3 }
+
+[[products]]
+name = "大冰奶"
+price = 30
+parts = [ { name = "奶茶原料", cost = 6 }, { name = "杯材", cost = 3 } ]

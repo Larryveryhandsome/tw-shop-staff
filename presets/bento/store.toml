@@ -1,0 +1,46 @@
+# 產業範本：便當／小吃店
+# 用法：python tools/use_preset.py bento（會複製到 config/store.toml），再把店名、地址、電話改成你自己的。
+
+[store]
+name = "示範便當店"
+short_name = "示範便當"
+address = "（請填店址）"
+phone = "（請填電話）"
+public_url = "http://localhost:8402"
+port = 8402
+cookie_name = "shopstaff"
+logo = ""
+industry = "bento"
+
+[finance]
+fin_start = "2026-01-01"
+exp_start = "2026-01-01"
+petty_from = "2026-01-01"
+float_cash = 5000
+expense_categories = ["自購食材雜貨", "包材與餐具", "清潔文具雜支", "水電瓦斯電信", "設備器具", "員工餐", "行銷與公關", "平台與手續費", "其他"]
+unit_name = "個"
+
+[modules]
+safety = true
+crm = true
+delivery = true
+marketing = true
+news = true
+journal = true
+
+[sales]
+area_core = []
+area_outside_min = 20
+min_order = 3
+daily_call_target = 50
+
+[ledger]
+port = 8403
+public_url = "http://localhost:8403"
+
+[ai]
+enabled = false
+claude_bin = "claude"
+
+[paths]
+marketing_dir = "data/marketing"

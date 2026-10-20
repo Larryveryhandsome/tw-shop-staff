@@ -1,0 +1,51 @@
+# 示範假資料設定：早餐店（python app/seed_demo.py --preset breakfast）
+# 人名一律用職稱代稱，電話一律 0900-000-xxx；不含任何真實店家資料。
+
+revenue_min = 8000
+revenue_max = 15000
+avg_price = 45
+weekly_closed = "0"   # 每週公休：0＝週一 … 6＝週日，逗號分開；空白＝全年無休
+leads = ["示範工廠", "示範國中", "示範物流中心"]
+
+[[staff]]
+name = "店長"
+role = "manager"
+kind = "monthly"
+amount = 33000
+shift = ["05:30", "09:30", "10:00", "13:30"]
+
+[[staff]]
+name = "煎台A"
+role = "staff"
+kind = "hourly"
+amount = 200
+shift = ["05:30", "09:30", "10:00", "11:00"]
+
+[[staff]]
+name = "外場B"
+role = "staff"
+kind = "hourly"
+amount = 200
+shift = ["06:00", "10:00", "", ""]
+
+[[expense]]
+category = "食材（吐司、蛋、肉品）"
+item = "吐司、蛋"
+min = 800
+max = 2200
+
+[[expense]]
+category = "包材與餐具"
+item = "紙袋、杯子"
+min = 300
+max = 900
+
+[[manual]]
+chapter = "開店前"
+title = "備料順序"
+body = "先開煎台預熱，再備吐司、蛋液、蘿蔔糕。"
+
+[[manual]]
+chapter = "出餐"
+title = "外帶包裝"
+body = "熱食與冷飲分開裝袋，醬料另附。"

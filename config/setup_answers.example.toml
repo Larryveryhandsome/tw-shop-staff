@@ -1,0 +1,27 @@
+# 安裝精靈答案檔範例：python setup.py --answers config/setup_answers.example.toml
+# 複製一份改成你的資料再用。⚠️ 裡面有密碼，用完請刪掉，不要放進 git。
+
+preset = "drink"                 # bento / drink / breakfast / salon / retail
+name = "示範飲料店"
+short_name = "示範飲料"
+address = "（店址）"
+phone = "0900-000-000"
+start = "2026-11-01"             # 從哪天開始用
+public_url = "http://localhost:8402"
+
+admin_name = "老闆"
+admin_username = "admin"
+admin_password = "請改成至少8碼的密碼"
+ledger_password = ""             # 股東網站共用密碼；空白＝隨機產生
+
+demo = true                      # 另外建一家示範店（data/demo/）
+
+[[shareholders]]
+name = "股東甲"
+committed = 600000
+paid = 600000
+
+[[shareholders]]
+name = "股東乙"
+committed = 400000
+paid = 200000
