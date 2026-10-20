@@ -114,7 +114,10 @@ def seed(db_path, key, days=45, today=None, rnd=None):
                           (ds, e["category"], e["item"], "示範廠商", amt, "零用金", st_, admin, now, None if recent else admin, None if recent else now))
         d += datetime.timedelta(days=1)
 
-    c.execute("INSERT INTO petty(day,amount,note,created_by,created,kind) VALUES(?,?,?,?,?,'撥款')", (start.isoformat(), 20000, "零用金（示範）", admin, now))
+    # 撥款要夠付示範期間從零用金花掉的錢（多留約兩成、進位到萬），店長打開記帳頁才不會看到負數的零用金
+    spent = c.execute("SELECT COALESCE(SUM(amount),0) FROM fin_exp WHERE pay='零用金'").fetchone()[0]
+    grant = max(20000, -(-int(spent * 1.2) // 10000) * 10000)
+    c.execute("INSERT INTO petty(day,amount,note,created_by,created,kind) VALUES(?,?,?,?,?,'撥款')", (start.isoformat(), grant, "零用金（示範）", admin, now))
     for i, name in enumerate(demo.get("leads", []), 1):
         c.execute("""INSERT INTO leads(code,name,category,area,phone,priority,status,updated) VALUES(?,?,?,?,?,?,?,?)""",
                   ("D%03d" % i, name, "示範", "示範區", "0900-000-%03d" % (100 + i), rnd.choice("ABC"),

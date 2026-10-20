@@ -40,7 +40,9 @@ db = B.read_db(sys.argv[2], cf["ledger"]["period_start"], "2026-03-20")
 d = B.build(cf, db, "2026-03-20")
 print(json.dumps(dict(accounts=len(r["accounts"]), days=r["days"], people=len(rows), gross=sum(x["base"] for x in rows),
                       flags=[f for x in rows for f in x["law_flags"]], revenue=d["total"]["revenue"], expense=d["total"]["expense"],
-                      payroll=d["total"]["payroll"], pending=d["pending"], products=len(d["products"]),
+                      payroll=d["total"]["payroll"], pending=d["pending"],
+                      petty_given=c.execute("SELECT COALESCE(SUM(amount),0) FROM petty WHERE removed=0 AND kind<>'收入'").fetchone()[0],
+                      petty_spent=c.execute("SELECT COALESCE(SUM(amount),0) FROM fin_exp WHERE removed=0 AND pay='零用金'").fetchone()[0], products=len(d["products"]),
                       leads=c.execute("SELECT COUNT(*) FROM leads").fetchone()[0])))
 '''
 
@@ -62,6 +64,7 @@ try:
         check("%s 薪資算得出來（%s）" % (key, format(r["gross"], ",")), r["people"] >= 2 and r["gross"] > 0 and r["payroll"] > 0, r)
         check("%s 示範班表沒有違反勞基法的提醒" % key, not r["flags"], r["flags"])
         check("%s 最近兩天的支出留著待核銷、營收都入帳" % key, r["pending"]["exp"] >= 1 and r["pending"]["rev"] == 0, r["pending"])
+        check("%s 示範店零用金餘額不為負（撥 %s、花 %s）" % (key, format(r["petty_given"], ","), format(r["petty_spent"], ",")), r["petty_given"] >= r["petty_spent"] > 0, r)
         check("%s 股東頁有單位成本" % key, r["products"] >= 2, r)
     # 已經有資料庫時不會蓋掉
     db = os.path.join(tmp, "exists.db"); open(db, "w").close()
