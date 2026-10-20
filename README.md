@@ -80,6 +80,10 @@ pip install -r requirements.txt
 
 沒裝也能用，只是不會推播通知。iPhone 要先用 Safari「加入主畫面」，再從主畫面打開才收得到。
 
+### 需要哪些金鑰？
+
+**都不需要，全部選用。** 打卡、計薪、記帳、股東網站完全不用任何金鑰或外部帳號。手機推播的金鑰系統會自動產生（只要 `pip install -r requirements.txt`）；要從外面連進來才需要 Cloudflare 帳號；行銷與新聞用 AI 的話由外部工具處理，本系統不要求 AI 金鑰。申請步驟、費用、怎麼確認成功、常見錯誤，看 [docs/金鑰申請.md](docs/金鑰申請.md)。
+
 ---
 
 ## 產業範本
@@ -200,6 +204,6 @@ python tests/test_industries.py
 
 <a href="https://lin.ee/pdYGARu"><img src="https://scdn.line-apps.com/n/line_add_friends/btn/zh-Hant.png" alt="加入好友" height="36"></a>
 
-- 💬 LINE 官方帳號：[@812ibtir](https://lin.ee/pdYGARu)（請註明「門市員工＋股東系統 客製化」）
+- 💬 LINE 官方帳號：[@812ibtir](https://lin.ee/pdYGARu)（請註明「小店員工系統 客製化」）
 - 🏢 留白事務所：網頁設計、AI 自動化、房仲遠端助理
 - 👤 作者：[林其衞 Larry](https://github.com/Larryveryhandsome)
