@@ -17,7 +17,7 @@
 - 勞保、健保自付額：依每人薪資設定填的金額扣；雇主勞退提繳 6% 只顯示、不從薪水扣。
 - 預支：記在哪個月的薪資扣（pay_month），扣到應發為止，沒扣完的定案時轉下個月。
 - 老闆調整（加或減）一律寫原因，算在實發裡。
-- 基本工資：低於 labor_rules.toml 設定的當年度基本工資，老闆頁會警示。
+- 基本工資：低於 config/labor_calendar/<年>.toml 設定的當年度基本工資，老闆頁會警示；當年度沒設定會明確提醒，不靜靜沿用舊值。
 """
 import calendar
 import json
@@ -309,28 +309,44 @@ def profile_for(c, uid, month, cur):
 
 # ---------------- 勞基法計薪（純函式，方便單元測試） ----------------
 def holidays(year):
-    h = L.get("holiday", {})
-    return set(h.get("dates_%d" % int(year), [])) if h.get("enabled", True) else set()
+    """這一年的國定假日（config/labor_calendar/<年>.toml）；沒有設定＝空集合，year_missing() 會提醒"""
+    if not L.get("holiday", {}).get("enabled", True):
+        return set()
+    return set(cfg.LABOR_CALENDAR.get(int(year), {}).get("holidays") or [])
 
 
 def year_missing(year):
-    """labor_rules.toml 沒有這一年的國定假日、基本工資 → 回傳提醒（國定假日清單是逐年手填的，跨年忘了補會靜靜算錯）"""
+    """勞動曆沒有這一年的國定假日、基本工資 → 回傳提醒（國定假日清單是逐年手填的，跨年忘了補會靜靜算錯）"""
     y, out = int(year), []
-    h = L.get("holiday", {})
-    if h.get("enabled", True) and ("dates_%d" % y) not in h:
-        out.append("labor_rules.toml 沒有 %d 年的國定假日（[holiday] dates_%d），國定假日出勤加倍與應上班天數會算錯，請依人事行政總處公告補上" % (y, y))
-    if str(y) not in {str(k) for k in L.get("minimum_wage", {})}:
-        out.append("labor_rules.toml 沒有 %d 年的基本工資（[minimum_wage] %d），基本工資檢查用的是舊年度的數字，請依勞動部公告補上" % (y, y))
+    ent = cfg.LABOR_CALENDAR.get(y, {})
+    if L.get("holiday", {}).get("enabled", True) and ent.get("holidays") is None:
+        out.append("勞動曆沒有 %d 年的國定假日（config/labor_calendar/%d.toml 的 [holidays] dates），"
+                   "國定假日出勤不會加倍、月薪應上班天數不會扣國定假日，請依人事行政總處公告補上" % (y, y))
+    if not ent.get("minimum_wage"):
+        prev = _latest_wage_year(y)
+        out.append("勞動曆沒有 %d 年的基本工資（config/labor_calendar/%d.toml 的 [minimum_wage]），%s，請依勞動部公告補上"
+                   % (y, y, "基本工資檢查暫用 %d 年的數字" % prev if prev else "無法檢查基本工資"))
     return out
 
 
+def _latest_wage_year(year):
+    keys = sorted(k for k, v in cfg.LABOR_CALENDAR.items() if v.get("minimum_wage") and k <= int(year))
+    return keys[-1] if keys else None
+
+
 def min_wage(year):
-    mw = L.get("minimum_wage", {})
-    keys = sorted(int(k) for k in mw if str(k).isdigit())
-    if not keys:
-        return {}
-    use = [k for k in keys if k <= int(year)]
-    return mw.get(str(use[-1] if use else keys[0]), {})
+    """這一年的基本工資 {"monthly", "hourly", "year"}；沒設定這一年 → 用最近一個較早年度，並以 "year" 標明實際用的是哪一年"""
+    y = _latest_wage_year(year)
+    return dict(cfg.LABOR_CALENDAR[y]["minimum_wage"], year=y) if y else {}
+
+
+def calendar_status(today=None):
+    """啟動時、老闆首頁用：今年（12 月時連明年）勞動曆缺什麼、勞動曆檔有什麼問題 → 提醒清單（空＝都設定好了）"""
+    t = date.fromisoformat(today) if isinstance(today, str) else (today or date.today())
+    out = list(cfg.LABOR_CALENDAR_PROBLEMS) + year_missing(t.year)
+    if t.month == 12:
+        out += ["下個月就是 %d 年：%s" % (t.year + 1, w) for w in year_missing(t.year + 1)]
+    return out
 
 
 def _tiers(m, tiers):
@@ -426,10 +442,11 @@ def legal_pay(kind, amount, off_days, month, day_mins, prev_days=()):
         flags.append("表定月休 %d 天，少於每週兩天（一例一休）約 %d 天" % (off_days or 0, ml * 2 // 7))
     flags += year_missing(y)
     mw = min_wage(y)
+    note = "" if mw.get("year") == y else "（%d 年未設定，暫用 %d 年數字比對）" % (y, mw.get("year") or 0)
     if kind == "monthly" and mw.get("monthly") and amount < mw["monthly"]:
-        flags.append("月薪 %s 低於 %d 年基本工資 %s（部分工時請改用時薪制）" % (format(amount, ","), y, format(mw["monthly"], ",")))
+        flags.append("月薪 %s 低於 %d 年基本工資 %s%s（部分工時請改用時薪制）" % (format(amount, ","), mw["year"], format(mw["monthly"], ","), note))
     if kind == "hourly" and mw.get("hourly") and amount < mw["hourly"]:
-        flags.append("時薪 %d 低於 %d 年基本工資時薪 %d" % (amount, y, mw["hourly"]))
+        flags.append("時薪 %d 低於 %d 年基本工資時薪 %d%s" % (amount, mw["year"], mw["hourly"], note))
     return dict(reg_mins=int(reg_mins), base_reg=base_reg, extra_reg=extra_reg, ot_pay=ot_pay, rest_pay=rest_pay, hol_pay=hol_pay, gross=gross,
                 hourly_rate=round(per_min * 60, 2), need=need, full=full, flags=flags, detail=detail,
                 ot_mins=ot_mins, rest_mins=rest_mins, hol_mins=hol_mins)

@@ -119,7 +119,7 @@ pip install -r requirements.txt
 | 跨午夜的班 | 夜市、大夜班整班算在上班那天，不會拆成兩天漏打卡 | — |
 | 勞健保 | 每人填自付額，從實發扣；雇主勞退 6% 只顯示 | 勞工退休金條例第 14 條 |
 
-所有倍率、國定假日、基本工資都在 [`config/labor_rules.toml`](config/labor_rules.toml)，**每年請自行更新**。完整說明和開店前的檢查表見 [docs/labor-law.md](docs/labor-law.md)。
+倍率在 [`config/labor_rules.toml`](config/labor_rules.toml)；每年的國定假日、基本工資放在 `config/labor_calendar/<年份>.toml`（目前附 2026，**2027 需自行依公告新增，沒有時系統會明確警告**）。完整說明和開店前的檢查表見 [docs/labor-law.md](docs/labor-law.md)。
 
 ---
 

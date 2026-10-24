@@ -56,6 +56,9 @@ def python_bg():
 
 def start(demo=False, open_browser=False):
     os.makedirs(LOGS, exist_ok=True)
+    import payroll  # noqa: E402  勞動曆（國定假日、基本工資）今年沒設定 → 啟動時就講清楚
+    for w in payroll.calendar_status():
+        print("⚠️ 警告：" + w)
     if demo and not os.path.exists(os.path.join(ROOT, "data", "demo", "crm.db")):
         print("還沒有示範店。先跑：python app/seed_demo.py --preset bento --db data/demo/crm.db")
         return 1

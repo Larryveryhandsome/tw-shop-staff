@@ -861,11 +861,13 @@ class H(O.Ops, X.Extras, SA.Safety, MK.Marketing, http.server.BaseHTTPRequestHan
             b["setup_missing"] = [r["name"] for r in c.execute("""SELECT u.name FROM users u LEFT JOIN pay_profile p ON p.user_id=u.id
                     WHERE u.active=1 AND COALESCE(u.demo,0)=0 AND COALESCE(u.removed,0)=0 AND u.role<>'admin'
                     AND (p.user_id IS NULL OR (p.punch=1 AND NOT EXISTS (SELECT 1 FROM shifts s WHERE s.user_id=u.id))) ORDER BY u.id""")]
+            b["labor_calendar"] = P.calendar_status()          # 今年的國定假日／基本工資沒設定 → 老闆首頁紅色提醒
             return self.send_json(b)
         if p == "/api/boss/payroll":
             month = q.get("month") or today()[:7]
             st = c.execute("SELECT * FROM pay_month WHERE month=?", (month,)).fetchone()
-            return self.send_json({"month": month, "rows": P.month_rows(c, month), "status": dict(st) if st else None})
+            return self.send_json({"month": month, "rows": P.month_rows(c, month), "status": dict(st) if st else None,
+                                   "labor_calendar": list(cfg.LABOR_CALENDAR_PROBLEMS) + P.year_missing(month[:4])})
         if p == "/api/boss/fixes":
             rows = [dict(x) for x in c.execute("""SELECT f.*, u.name FROM punch_fix f JOIN users u ON u.id=f.user_id WHERE COALESCE(u.demo,0)=0
                        ORDER BY CASE f.status WHEN '待審' THEN 0 ELSE 1 END, f.id DESC LIMIT 100""")]
@@ -1060,7 +1062,16 @@ def write_pid(path):
     atexit.register(lambda: os.path.exists(path) and os.remove(path))
 
 
+def startup_warnings(out=None):
+    """啟動時檢查勞動曆：今年的國定假日、基本工資沒設定就明確警告（寫進 log；launcher 會把 stderr 寫到 data/logs/）"""
+    ws = P.calendar_status()
+    for w in ws:
+        print("警告：" + w, file=out or sys.stderr, flush=True)
+    return ws
+
+
 if __name__ == "__main__":
+    startup_warnings()
     init_db()
     write_pid(os.path.join(os.path.dirname(DB), "app.pid"))
     threading.Thread(target=backup_loop, daemon=True).start()

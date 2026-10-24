@@ -15,6 +15,7 @@ async function bToday() {
   h += `<div class="grid"><div class="tile stat good"><div class="k">上班中</div><div class="v">${on}</div></div><div class="tile stat ${wait ? 'warn' : ''}"><div class="k">還沒打卡</div><div class="v">${wait}</div></div>
     <div class="tile stat"><div class="k">今天日誌</div><div class="v">${(d.journal || []).filter(j => j.wrote).length}/${(d.journal || []).length}</div></div>
     <div class="tile stat ${ME.fin_pending ? 'warn' : ''}"><div class="k">記帳待核銷</div><div class="v">${ME.fin_pending || 0}</div><div class="s"><a class="more" onclick="go('fin')">去核銷</a></div></div></div>`;
+  (d.labor_calendar || []).forEach(w => { h += `<div class="banner red" data-labor-cal>勞動曆提醒：${esc(w)}（做法見 docs/labor-law.md「每年要更新的設定」）</div>`; });
   if (!d.store_set) h += `<div class="banner warn">還沒校正店家位置。人在店裡時，到「設定」按「我現在在店裡，用我的位置設為店家」。</div>`;
   if (ME.pending_regs) h += `<div class="banner blue" onclick="bossTab('acct')">有 ${ME.pending_regs} 位新夥伴註冊，等你審核 ›</div>`;
   if (ME.pending_fixes) h += `<div class="banner blue" onclick="bossTab('fix')">有 ${ME.pending_fixes} 筆補登打卡等你審核 ›</div>`;
@@ -36,6 +37,7 @@ async function bPay() {
     <a class="btn sec sm" href="/boss/slips?month=${BM}" ${matchMedia('(display-mode: standalone)').matches || navigator.standalone ? '' : 'target="_blank"'}>產生簽收單</a>
     ${st === '試算中' ? `<button class="btn gray sm" onclick="setMonth('已定案')">定案</button>` : ''}${st !== '已發薪' ? `<button class="btn gray sm" onclick="setMonth('已發薪')">標記已發薪</button>` : ''}
     ${st !== '試算中' ? `<button class="btn gray sm" onclick="setMonth('試算中')">改回試算中</button>` : ''}</div>
+  ${(d.labor_calendar || []).map(w => `<div class="banner red" data-labor-cal>勞動曆提醒：${esc(w)}</div>`).join('')}
   ${st !== '試算中' ? `<div class="banner ok">${st}：數字已經固定（存了一份），之後補登、調薪、停用都不會改到這個月。要改請先按「改回試算中」。${rs.some(r => r.adv_left > 0) ? '沒扣完的預支已經轉到下個月。' : ''}</div>` : ''}
   <div class="grid"><div class="tile stat"><div class="k">應發合計</div><div class="v">${fmt(S('base'))}</div></div><div class="tile stat"><div class="k">預支扣回</div><div class="v">${fmt(S('ded'))}</div></div>
     <div class="tile stat"><div class="k">加班與假日加給</div><div class="v">${fmt(S('ot_pay') + S('rest_pay') + S('hol_pay'))}</div></div><div class="tile stat"><div class="k">實發合計</div><div class="v">${fmt(S('net'))}</div></div></div>
@@ -50,7 +52,7 @@ async function bPay() {
         ${x.segs.map(g => g[0] + '–' + g[1]).join('　') || '—'} <span class="small">班：${esc(x.sched)}</span>
         ${x.lates.map(l => `<span class="tag t-warn">晚 ${l[2]} 分</span>`).join('')}${x.issues.map(s => `<span class="tag t-warn">${esc(s)}</span>`).join('')}${x.flag ? `<span class="tag t-blue">${esc(x.flag)}</span>` : ''}${{ rest: '<span class="tag t-warn">休息日出勤</span>', holiday: '<span class="tag t-warn">國定假日出勤</span>', regular_off: '<span class="tag t-red">例假出勤</span>' }[x.type] || ''}</div><b>${(x.mins / 60).toFixed(2)} H</b></div>`).join('') || '<span class="muted">這個月沒有打卡</span>'}</td></tr>`).join('')}
   </table></div></div>
-  <div class="small">計薪依 config/labor_rules.toml（勞基法預設值）：每天超過 8 小時算加班；每週第 6 個出勤日算休息日；國定假日出勤加倍。遲到的分鐘本來就不算工時，不另外扣款。以上原則上仍請依最新法規核對。</div>`;
+  <div class="small">計薪依 config/labor_rules.toml（勞基法預設值）與 config/labor_calendar/（每年的國定假日、基本工資）：每天超過 8 小時算加班；每週第 6 個出勤日算休息日；國定假日出勤加倍。遲到的分鐘本來就不算工時，不另外扣款。以上原則上仍請依最新法規核對。</div>`;
   $('#main').innerHTML = h;
 }
 async function setMonth(status) {

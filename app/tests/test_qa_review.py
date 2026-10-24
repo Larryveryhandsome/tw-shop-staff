@@ -21,7 +21,7 @@ env = dict(os.environ, CRM_DB=DB, CRM_BAK=os.path.join(tmp, "bak"), CRM_PORT=POR
 env.pop("SHOP_TZ", None)
 sys.path.insert(0, HERE)
 os.environ.update(CRM_DB=DB, CRM_BAK=os.path.join(tmp, "bak"), CRM_EXP_START="2026-01-01")
-import app, payroll as P  # noqa: E402
+import app, payroll as P, cfg  # noqa: E402
 
 app.init_db()
 c = app.db()
@@ -144,9 +144,22 @@ finally:
 # ── 國定假日／基本工資：沒填到的年份要警示，不能靜靜算錯
 f26 = P.legal_pay("monthly", 36000, 8, "2026-10", {"2026-10-05": 480})["flags"]
 f27 = P.legal_pay("monthly", 36000, 8, "2027-01", {"2027-01-04": 480})["flags"]
-check("2026 年有設定：沒有缺年份警示", not any("labor_rules.toml 沒有" in x for x in f26), f26)
+check("2026 年有設定：沒有缺年份警示", not any("勞動曆沒有" in x for x in f26), f26)
 check("2027 年沒有國定假日清單：警示", any("沒有 2027 年的國定假日" in x for x in f27), f27)
 check("2027 年沒有基本工資：警示", any("沒有 2027 年的基本工資" in x for x in f27), f27)
+check("2027 年警示講清楚去哪補（config/labor_calendar/2027.toml）", any("labor_calendar/2027.toml" in x for x in f27), f27)
+check("2027 年基本工資檢查標明暫用 2026 數字", P.min_wage(2027).get("year") == 2026 and P.min_wage(2026).get("monthly") == 29500, P.min_wage(2027))
+check("2026 國定假日來自 labor_calendar 且含小年夜與春節", {"2026-02-15", "2026-02-17", "2026-10-10"} <= P.holidays(2026), sorted(P.holidays(2026))[:3])
+check("2027 沒設定：國定假日是空集合（由警示提醒）", P.holidays(2027) == set() or P.year_missing(2027) == [], P.year_missing(2027))
+check("12 月時啟動檢查會提前提醒明年", any("下個月就是" in x for x in P.calendar_status("2026-12-05")), P.calendar_status("2026-12-05"))
+import tempfile
+_td = tempfile.mkdtemp()
+_t30 = 'year = 2030\n[minimum_wage]\nmonthly = 30000\nhourly = 200\n[holidays]\ndates = ["2030-01-01", "2031-01-01"]\n'
+open(os.path.join(_td, "2030.toml"), "w", encoding="utf-8").write(_t30)
+open(os.path.join(_td, "2031.toml"), "w", encoding="utf-8").write("this is not toml ===")
+_cal, _prob = cfg.load_labor_calendar(_td, {})
+check("勞動曆：正確檔讀進來、錯年份日期被略過並列問題", _cal[2030]["holidays"] == ["2030-01-01"] and _cal[2030]["minimum_wage"]["monthly"] == 30000 and any("2031-01-01" in x for x in _prob), (_cal, _prob))
+check("勞動曆：壞檔不讓系統掛掉，只列問題", 2031 not in _cal and any("2031.toml" in x for x in _prob), _prob)
 
 # ── 股東頁：薪資成本＝應發＋老闆調整
 sys.path.insert(0, os.path.join(ROOT, "ledger", "builder"))
