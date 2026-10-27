@@ -1,0 +1,51 @@
+# 示範假資料設定：美髮／美甲（python app/seed_demo.py --preset salon）
+# 人名一律用職稱代稱，電話一律 0900-000-xxx；不含任何真實店家資料。
+
+revenue_min = 9000
+revenue_max = 22000
+avg_price = 900
+weekly_closed = "0"   # 每週公休：0＝週一 … 6＝週日，逗號分開；空白＝全年無休
+leads = []
+
+[[staff]]
+name = "店長"
+role = "manager"
+kind = "monthly"
+amount = 38000
+shift = ["11:00", "15:00", "16:00", "20:00"]
+
+[[staff]]
+name = "設計師A"
+role = "staff"
+kind = "monthly"
+amount = 30000
+shift = ["11:00", "15:00", "16:00", "20:00"]
+
+[[staff]]
+name = "助理B"
+role = "staff"
+kind = "hourly"
+amount = 200
+shift = ["12:00", "16:00", "16:30", "20:00"]
+
+[[expense]]
+category = "耗材（染劑、燙劑、甲油）"
+item = "染劑"
+min = 1500
+max = 4000
+
+[[expense]]
+category = "毛巾洗滌"
+item = "毛巾送洗"
+min = 600
+max = 1200
+
+[[manual]]
+chapter = "接待"
+title = "預約確認"
+body = "前一天傳訊息確認預約時間，當天提早 10 分鐘準備座位。"
+
+[[manual]]
+chapter = "衛生"
+title = "工具消毒"
+body = "剪刀、梳子每位客人用完消毒，毛巾一客一換。"

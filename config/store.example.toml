@@ -1,0 +1,51 @@
+# 店家設定檔（範例）
+# 使用方式：複製一份改名成 store.toml，再把下面的資料改成你自己的店。
+# 沒有 store.toml 時，系統會用這份範例跑（示範模式）。
+
+[store]
+name = "示範便當店"              # 完整店名：登入頁、簽收單表頭、頁尾
+short_name = "示範店"            # 短名：手機主畫面圖示下方、通知標題
+address = "（請填店址）"
+phone = "（請填訂餐電話）"
+public_url = "http://localhost:8402"   # 對外網址（推播、登入卡 QR code 用）；只在店內用就保持 localhost
+port = 8402
+cookie_name = "shopstaff"
+logo = ""                        # 放在 app/static/ 的 LOGO 檔名，例如 "logo.png"；空白＝不顯示
+industry = "bento"               # 產業範本：bento 便當小吃 / drink 飲料店 / breakfast 早餐店 / salon 美髮美甲 / retail 零售
+
+[finance]
+fin_start = "2026-01-01"         # 從哪天開始用系統記營收
+exp_start = "2026-01-01"         # 從哪天開始用系統記支出
+petty_from = "2026-01-01"        # 從哪天開始店內花費改從零用金出
+float_cash = 5000                # 找零金（抽屜固定留的零錢）
+expense_categories = ["自購食材雜貨", "清潔文具雜支", "水電瓦斯電信", "設備器具", "員工餐與餐費", "行銷與公關", "規費與手續費", "其他"]
+unit_name = "份"                 # 營收日報裡「賣了幾 ___」：便當店填「個」、飲料店填「杯」、美髮填「位」
+
+[modules]
+# 功能開關：false＝選單上不出現
+safety = true        # 食安紀錄（冰箱溫度、瓦斯、油品、廢油、廁所）——餐飲業用
+crm = true           # 團體訂單開發（打電話開發企業客戶）
+delivery = true      # 外送看板
+marketing = true     # 行銷審核（AI 貼文草稿、社群雷達，老闆核准才發）
+news = true          # 每週新聞
+journal = true       # 夥伴日誌
+
+[sales]
+# 團體訂單開發（B2B 名單）：重點區域與門檻
+area_core = []                   # 重點行政區，例如 ["中正區", "大安區"]；空白＝不限區域
+area_outside_min = 20            # 重點區域以外，至少幾份才接
+min_order = 3                    # 外送最低份數
+daily_call_target = 50           # 每人每天開發目標通數
+
+[ledger]
+# 股東帳務網站（另一個程式 ledger/serve.py，股東用共用密碼登入）
+port = 8403
+public_url = "http://localhost:8403"
+
+[ai]
+# 選配：AI 找名單、社群雷達、每週新聞。要用本機的 Claude Code CLI。
+enabled = false
+claude_bin = "claude"
+
+[paths]
+marketing_dir = "data/marketing"  # 行銷交接資料夾（相對於專案根目錄，也可寫絕對路徑）

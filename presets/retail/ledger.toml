@@ -1,0 +1,55 @@
+# 股東帳務範本：零售門市
+# 用法：python tools/use_preset.py retail（會複製到 data/ledger.toml），再把股東、期初、手記改成你自己的。
+# ⚠️ 內部管理用試算，原則上不能取代會計師簽證的財務報表與報稅資料。
+
+[ledger]
+title = "股東帳務"
+period_start = "2026-01-01"
+show_payroll_detail = false
+show_receipts = true
+
+[[shareholders]]
+name = "股東甲"
+committed = 600000
+paid = 600000
+
+[[shareholders]]
+name = "股東乙"
+committed = 400000
+paid = 400000
+
+[opening]
+date = "2026-01-01"
+bank = 0
+cash = 0
+
+[[entries]]
+date = "2026-01-02"
+kind = "支出"
+category = "開辦費"
+item = "裝潢與設備（示範）"
+amount = 300000
+
+[[entries]]
+date = "2026-01-02"
+kind = "押金"
+category = "押金"
+item = "房屋押金（示範）"
+amount = 60000
+
+[[products]]
+name = "手工皂禮盒"
+price = 680
+parts = [ { name = "進貨", cost = 360 }, { name = "禮盒包材", cost = 40 } ]
+fees = { "網路平台" = 0.12 }
+
+[[products]]
+name = "在地醬油"
+price = 250
+parts = [ { name = "進貨", cost = 150 }, { name = "提袋", cost = 3 } ]
+fees = { "刷卡" = 0.02 }
+
+[[products]]
+name = "文創明信片"
+price = 50
+parts = [ { name = "進貨", cost = 18 } ]

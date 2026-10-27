@@ -1,0 +1,70 @@
+# 示範假資料設定：便當／小吃店（python app/seed_demo.py --preset bento）
+# 人名一律用職稱代稱，電話一律 0900-000-xxx；不含任何真實店家資料。
+
+revenue_min = 14000
+revenue_max = 26000
+avg_price = 110
+weekly_closed = "2"   # 每週公休：0＝週一 … 6＝週日，逗號分開；空白＝全年無休
+leads = ["示範科技公司", "示範國小", "示範醫院", "示範區公所", "示範工廠", "示範補習班"]
+
+[[staff]]
+name = "店長"
+role = "manager"
+kind = "monthly"
+amount = 36000
+shift = ["09:00", "13:00", "15:00", "19:00"]
+
+[[staff]]
+name = "內場A"
+role = "staff"
+kind = "monthly"
+amount = 31000
+shift = ["09:00", "13:00", "15:00", "19:00"]
+
+[[staff]]
+name = "外場B"
+role = "staff"
+kind = "hourly"
+amount = 200
+shift = ["10:30", "14:00", "", ""]
+
+[[staff]]
+name = "外送C"
+role = "staff"
+kind = "hourly"
+amount = 200
+shift = ["11:00", "13:30", "17:00", "19:00"]
+
+[[expense]]
+category = "自購食材雜貨"
+item = "雞蛋、青菜"
+min = 900
+max = 2500
+
+[[expense]]
+category = "包材與餐具"
+item = "餐盒、筷子"
+min = 600
+max = 1800
+
+[[expense]]
+category = "清潔文具雜支"
+item = "清潔劑、垃圾袋"
+min = 150
+max = 600
+
+[[expense]]
+category = "水電瓦斯電信"
+item = "瓦斯"
+min = 1800
+max = 3200
+
+[[manual]]
+chapter = "開店前"
+title = "開店檢查"
+body = "1. 開燈、開抽風\n2. 檢查冰箱溫度並記錄（食安頁）\n3. 確認今天的團體訂單與外送單"
+
+[[manual]]
+chapter = "出餐"
+title = "便當裝盒標準"
+body = "主菜擺右邊、配菜三樣、白飯壓平，蓋子扣好再貼標籤。"

@@ -1,0 +1,55 @@
+# 股東帳務範本：美髮／美甲
+# 用法：python tools/use_preset.py salon（會複製到 data/ledger.toml），再把股東、期初、手記改成你自己的。
+# ⚠️ 內部管理用試算，原則上不能取代會計師簽證的財務報表與報稅資料。
+
+[ledger]
+title = "股東帳務"
+period_start = "2026-01-01"
+show_payroll_detail = false
+show_receipts = true
+
+[[shareholders]]
+name = "股東甲"
+committed = 600000
+paid = 600000
+
+[[shareholders]]
+name = "股東乙"
+committed = 400000
+paid = 400000
+
+[opening]
+date = "2026-01-01"
+bank = 0
+cash = 0
+
+[[entries]]
+date = "2026-01-02"
+kind = "支出"
+category = "開辦費"
+item = "裝潢與設備（示範）"
+amount = 300000
+
+[[entries]]
+date = "2026-01-02"
+kind = "押金"
+category = "押金"
+item = "房屋押金（示範）"
+amount = 60000
+
+[[products]]
+name = "洗剪"
+price = 600
+parts = [ { name = "洗髮精與護髮", cost = 20 }, { name = "毛巾洗滌", cost = 15 }, { name = "拋棄式用品", cost = 10 } ]
+fees = { "預約平台" = 0.1 }
+
+[[products]]
+name = "染髮（短髮）"
+price = 1800
+parts = [ { name = "染劑", cost = 260 }, { name = "護髮", cost = 60 }, { name = "毛巾洗滌", cost = 15 } ]
+fees = { "預約平台" = 0.1 }
+
+[[products]]
+name = "凝膠美甲（單色）"
+price = 1200
+parts = [ { name = "甲油膠", cost = 80 }, { name = "耗材", cost = 40 } ]

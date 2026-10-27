@@ -1,0 +1,44 @@
+# 示範假資料設定：零售門市（python app/seed_demo.py --preset retail）
+# 人名一律用職稱代稱，電話一律 0900-000-xxx；不含任何真實店家資料。
+
+revenue_min = 6000
+revenue_max = 16000
+avg_price = 250
+weekly_closed = ""   # 每週公休：0＝週一 … 6＝週日，逗號分開；空白＝全年無休
+leads = []
+
+[[staff]]
+name = "店長"
+role = "manager"
+kind = "monthly"
+amount = 33000
+shift = ["10:00", "14:00", "15:00", "19:00"]
+
+[[staff]]
+name = "門市A"
+role = "staff"
+kind = "hourly"
+amount = 200
+shift = ["13:00", "17:00", "17:30", "21:00"]
+
+[[expense]]
+category = "進貨成本"
+item = "補貨"
+min = 3000
+max = 9000
+
+[[expense]]
+category = "包材"
+item = "提袋"
+min = 200
+max = 600
+
+[[manual]]
+chapter = "開店前"
+title = "陳列檢查"
+body = "補齊熱賣商品，價格標籤朝外。"
+
+[[manual]]
+chapter = "收銀"
+title = "發票與退換貨"
+body = "退換貨要有發票，七天內、商品完整才可退。"
