@@ -107,7 +107,7 @@ class LedgerTest(unittest.TestCase):
         with open(os.path.join(out, "index.html"), encoding="utf-8") as f:
             page = f.read()
         self.assertIn("測試帳務", page)
-        self.assertIn("https://line.me/R/ti/p/@812ibtir", page)   # 股東頁尾的作者客製化資訊
+        self.assertIn("https://line.me/ti/p/xzHT2IywOM", page)   # 股東頁尾的作者客製化資訊
         blob = page.split("const D = ")[1].split(";\nconst fmt")[0]
         data = json.loads(blob)
         self.assertEqual(data["total"]["revenue"], 22000)

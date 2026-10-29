@@ -274,8 +274,8 @@ def main(argv=None):
     print("　員工系統：%s" % (a.get("public_url") or "http://localhost:8402"))
     print("　股東網站：http://localhost:8403")
     print("　員工請自己到登入頁按「新夥伴註冊」，你在老闆頁核准、設定薪資和班表。")
-    print("\n需要改成你們公司的版本、幫忙安裝或串接？加 LINE 官方帳號 @812ibtir（留白事務所・林其衞），"
-          "原則上 1～2 個工作天回覆報價。https://line.me/R/ti/p/@812ibtir")
+    print("\n需要改成你們公司的版本、幫忙安裝或串接？加 LINE 林其衞（0928-880-392），"
+          "原則上 1～2 個工作天回覆報價。https://line.me/ti/p/xzHT2IywOM")
 
 
 if __name__ == "__main__":
